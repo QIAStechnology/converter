@@ -118,6 +118,8 @@ def sync_products(csv_products, xml_products, tree, root):
             ET.SubElement(new_record, "field", column_name="Display Text").text = csv_prod["Name"]
             ET.SubElement(new_record, "field", column_name="EAN Code").text = csv_prod["EAN"]
             ET.SubElement(new_record, "field", column_name="Retail Price (1st)").text = csv_prod["Price"]
+            ET.SubElement(new_record, "field", column_name="Department ID").text = csv_prod["Department ID"]
+            ET.SubElement(new_record, "field", column_name="Text Area (1)").text = csv_prod["Text Area (1)"]
             print(f"➕ Added product {plu} to XML")
 
     # Check products from XML that are missing in CSV
