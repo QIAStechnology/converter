@@ -1,0 +1,108 @@
+C:/Users/bello/AppData/Local/Programs/Python/Python310/python.exe: can't open file 'C:\\Users\\bello\\Desktop\\QIAS\\neccesary files mx business\\converter\\converter\\sync_products.py': [Errno 2] No such file or directory
+Loading CSV file: carrefour_test.csv
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0035', 'Display Text': 'MOULE ELEVAGE', 'EAN Code': '2110035', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0043', 'Display Text': 'DAURADE ELEVAGE PM', 'EAN Code': '2110043', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Loading XML database: databaseSafe.xml
+Traceback (most recent call last):
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 292, in <module>
+    main()
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 277, in main
+    print("\U0001f4c2 Products in CSV (Source):")
+  File "C:\Users\bello\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f4c2' in position 0: character maps to <undefined>
+Loading CSV file: carrefour_test.csv
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0035', 'Display Text': 'MOULE ELEVAGE', 'EAN Code': '2110035', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0043', 'Display Text': 'DAURADE ELEVAGE PM', 'EAN Code': '2110043', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Loading XML database: databaseSafe.xml
+ Products in CSV (Source):
+Total products in CSV: 2115
+
+ Products in XML (Target):
+Total products in XML: 2115
+Loading CSV file: carrefour_test.csv
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0035', 'Display Text': 'MOULE ELEVAGE', 'EAN Code': '2110035', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0043', 'Display Text': 'DAURADE ELEVAGE PM', 'EAN Code': '2110043', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Loading XML database: c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml
+ Products in CSV (Source):
+Total products in CSV: 2115
+
+ Products in XML (Target):
+Total products in XML: 2115
+Traceback (most recent call last):
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 332, in <module>
+    main()
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 302, in main
+    print("\n\U0001f504 Starting sync at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+  File "C:\Users\bello\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f504' in position 2: character maps to <undefined>
+Loading CSV file: carrefour_test.csv
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0035', 'Display Text': 'MOULE ELEVAGE', 'EAN Code': '2110035', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0043', 'Display Text': 'DAURADE ELEVAGE PM', 'EAN Code': '2110043', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Loading XML database: c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml
+ Products in CSV (Source):
+Total products in CSV: 2115
+
+ Products in XML (Target):
+Total products in XML: 2115
+
+ Starting sync at 2025-09-07 14:12:22
+Traceback (most recent call last):
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 332, in <module>
+    main()
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 303, in main
+    sync_products(csv_products, xml_products, tree, root)
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 279, in sync_products
+    print(summary)
+  File "C:\Users\bello\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 8: character maps to <undefined>
+Loading CSV file: carrefour_test.csv
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0035', 'Display Text': 'MOULE ELEVAGE', 'EAN Code': '2110035', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0043', 'Display Text': 'DAURADE ELEVAGE PM', 'EAN Code': '2110043', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Loading XML database: c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml
+ Products in CSV (Source):
+Total products in CSV: 2115
+
+ Products in XML (Target):
+Total products in XML: 2115
+
+ Starting sync at 2025-09-07 14:14:48
+Traceback (most recent call last):
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 332, in <module>
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 303, in main
+    sync_products(csv_products, xml_products, tree, root)
+  File "C:\Users\bello\Desktop\QIAS\neccesary files mx business\converter\converter\sync_xml copy.py", line 279, in sync_products
+    print(summary)
+  File "C:\Users\bello\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 8: character maps to <undefined>
+Loading CSV file: carrefour_test.csv
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0035', 'Display Text': 'MOULE ELEVAGE', 'EAN Code': '2110035', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0043', 'Display Text': 'DAURADE ELEVAGE PM', 'EAN Code': '2110043', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Loading XML database: c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml
+ Products in CSV (Source):
+Total products in CSV: 2115
+
+ Products in XML (Target):
+Total products in XML: 2115
+
+ Starting sync at 2025-09-07 14:19:02
+Summary : Added: 0, Updated: 0
+ Sync complete.
+ Duration: 0:01:23.598032
+Loading CSV file: carrefour_test.csv
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0035', 'Display Text': 'MOULE ELEVAGE', 'EAN Code': '2110035', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Skipping product with out-of-range price 9999999.0: {'PLU Number': '0043', 'Display Text': 'DAURADE ELEVAGE PM', 'EAN Code': '2110043', 'Retail Price (1st)': '9999999.00', 'Department ID': '21', 'Text Area (1)': 'Consume a fin du 2 jours'}
+Loading XML database: c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml
+ Products in CSV (Source):
+Total products in CSV: 2115
+
+ Products in XML (Target):
+Total products in XML: 2115
+
+ Starting sync at 2025-09-07 14:24:22
+Summary : Added: 0, Updated: 0
+ Sync complete.
+ Duration: 0:02:02.167205

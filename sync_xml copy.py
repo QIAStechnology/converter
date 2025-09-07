@@ -5,7 +5,8 @@ import xml.etree.ElementTree as ET
 from decimal import Decimal, InvalidOperation
 
 CSV_FILE = "carrefour_test.csv"
-XML_FILE = "databaseSafe.xml"
+# XML_FILE = "databaseSafe.xml"
+XML_FILE = "c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml"
 
 
 def normalize_price(value: str) -> str:
@@ -51,21 +52,28 @@ def load_csv(file_path):
                 print(f"Skipping product with invalid price format: {row}")
                 continue
 
-            # Range validation: must be between 0 and 999999.99
+            # Range validation
             if not (0 <= price_val <= 999999.99):
                 print(f"Skipping product with out-of-range price {price_val}: {row}")
                 continue
 
+            # Parse numeric fields safely
+            def safe_int(value):
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    return 0
+
             product = {
-                "PLU": row.get("PLU Number", "").strip(),
+                "PLU": safe_int(row.get("PLU Number", "").strip()),
                 "Name": row.get("Display Text", "").strip(),
-                "EAN": normalize_ean(row.get("EAN Code", "").strip()),
+                "EAN": safe_int(normalize_ean(row.get("EAN Code", "").strip())),
                 "Price": f"{price_val:.2f}",
-                "Department ID": row.get("Department ID", "").strip(),
+                "Department ID": safe_int(row.get("Department ID", "").strip()),
                 "Text Area (1)": row.get("Text Area (1)", "").strip(),
             }
 
-            if product["PLU"] == "0000":
+            if product["PLU"] == 0:
                 print(f"Skipping product with empty PLU: {product}")
                 continue
             products.append(product)
@@ -74,27 +82,33 @@ def load_csv(file_path):
 
 
 
+
 def load_xml(file_path):
     print(f"Loading XML database: {file_path}")
     products = []
     tree = ET.parse(file_path)
     root = tree.getroot()
-    # i = 0
+
+    def safe_int(value):
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return 0
+
     for record in root.findall(".//table[@name='ITEM']/record"):
         fields = {f.attrib["column_name"]: (f.text or "").strip() for f in record.findall("field")}
         product = {
-            "PLU": fields.get("PLU Number", ""),
+            "PLU": safe_int(fields.get("PLU Number", "")),
             "Name": fields.get("Display Text", ""),
-            "EAN": normalize_ean(fields.get("EAN Code", "")),
+            "EAN": safe_int(normalize_ean(fields.get("EAN Code", ""))),
             "Price": normalize_price(fields.get("Retail Price (1st)", "")),
-            "Department ID": fields.get("Department ID", ""),
+            "Department ID": safe_int(fields.get("Department ID", "")),
             "Text Area (1)": fields.get("Text Area (1)", ""),
         }
         products.append(product)
-        # i += 1
-        # if i >= 10:
-        #     break
+
     return products
+
 
 
 def save_xml(path, tree):
@@ -134,14 +148,14 @@ def sync_products(csv_products, xml_products, tree, root, xml_file=XML_FILE):
                         old_val = fields[col].text or ""
                         new_val = csv_prod[key]
                         if old_val != new_val:
-                            msg = f"✏️ Updating {col} for PLU={plu}, Dept={dept_id}: {old_val} → {new_val}"
+                            msg = f" Updating {col} for PLU={plu}, Dept={dept_id}: {old_val} ::: {new_val}"
                             print(msg)
                             # logging.info(msg)
                             fields[col].text = new_val
                             updated = True
 
                     if updated:
-                        msg = f"✅ Product (PLU={plu}, Dept={dept_id}) updated in XML"
+                        msg = f" Product (PLU={plu}, Dept={dept_id}) updated in XML"
                         print(msg)
                         updated_count += 1
                         # logging.info(msg)
@@ -234,34 +248,34 @@ def sync_products(csv_products, xml_products, tree, root, xml_file=XML_FILE):
             for col, value in field_defaults.items():
                 ET.SubElement(new_record, "field", column_name=col, exclusion="false").text = value
 
-            msg = f"➕ Added product (PLU={plu}, Dept={dept_id}) with full schema to XML"
+            msg = f" Added product (PLU={plu}, Dept={dept_id}) with full schema to XML"
             print(msg)
             # logging.info(msg)
             added_count += 1
 
 
     # === DELETE ===
-    for (plu, dept_id), xml_prod in list(xml_dict.items()):
-        if (plu, dept_id) not in csv_dict:
-            for record in root.findall(".//table[@name='ITEM']/record"):
-                fields = {f.attrib["column_name"]: f for f in record.findall("field")}
-                if (
-                    fields.get("PLU Number") is not None
-                    and fields.get("Department ID") is not None
-                    and fields["PLU Number"].text.strip() == plu
-                    and fields["Department ID"].text.strip() == dept_id
-                ):
-                    root.find(".//table[@name='ITEM']").remove(record)
-                    msg = f"🗑️ Deleted product (PLU={plu}, Dept={dept_id}) from XML"
-                    print(msg)
-                    # logging.info(msg)
-                    deleted_count += 1
+    # for (plu, dept_id), xml_prod in list(xml_dict.items()):
+    #     if (plu, dept_id) not in csv_dict:
+    #         for record in root.findall(".//table[@name='ITEM']/record"):
+    #             fields = {f.attrib["column_name"]: f for f in record.findall("field")}
+    #             if (
+    #                 fields.get("PLU Number") is not None
+    #                 and fields.get("Department ID") is not None
+    #                 and fields["PLU Number"].text.strip() == plu
+    #                 and fields["Department ID"].text.strip() == dept_id
+    #             ):
+    #                 root.find(".//table[@name='ITEM']").remove(record)
+    #                 msg = f" Deleted product (PLU={plu}, Dept={dept_id}) from XML"
+    #                 print(msg)
+    #                 # logging.info(msg)
+    #                 deleted_count += 1
 
     # Save XML after sync
     ET.indent(tree, space="  ", level=0)  # 2 spaces indentation
     tree.write(xml_file, encoding="utf-8", xml_declaration=True)
 
-    summary = f"Summary → Added: {added_count}, Updated: {updated_count}, Deleted: {deleted_count}"
+    summary = f"Summary : Added: {added_count}, Updated: {updated_count}"
     print(summary)
     # logging.info(summary)
 
@@ -274,19 +288,23 @@ def main():
     tree = ET.parse(XML_FILE)
     root = tree.getroot()
 
-    print("📂 Products in CSV (Source):")
+    print(" Products in CSV (Source):")
     print(f"Total products in CSV: {len(csv_products)}")
     # for p in csv_products[:10]:
     #     print(f"PLU={p['PLU']}, Name={p['Name']}, EAN={p['EAN']}, Price={p['Price']}, Dept={p['Department ID']}, TextArea1={p['Text Area (1)']}")
 
-    print("\n📂 Products in XML (Target):")
+    print("\n Products in XML (Target):")
     print(f"Total products in XML: {len(xml_products)}")
     # for p in xml_products[:10]:
     #     print(f"PLU={p['PLU']}, Name={p['Name']}, EAN={p['EAN']}, Price={p['Price']}, Dept={p['Department ID']}, TextArea1={p['Text Area (1)']}")
 
+    start_time = datetime.datetime.now()
+    print("\n Starting sync at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     sync_products(csv_products, xml_products, tree, root)
-    print("🔄 Sync complete.")
-
+    print(" Sync complete.")
+    end_time = datetime.datetime.now()
+    duration = end_time - start_time
+    print(f" Duration: {duration}")
 
 if __name__ == "__main__":
     main()
