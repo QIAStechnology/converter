@@ -1,4 +1,5 @@
 import csv
+import datetime
 import re
 import xml.etree.ElementTree as ET
 from decimal import Decimal, InvalidOperation
@@ -40,23 +41,37 @@ def load_csv(file_path):
     print(f"Loading CSV file: {file_path}")
     products = []
     with open(file_path, newline="", encoding="latin-1") as csvfile:
-
         reader = csv.DictReader(csvfile, delimiter=";")  
-        # i = 0
         for row in reader:
+            price = normalize_price(row.get("Retail Price (1st)", "").strip())
+            
+            try:
+                price_val = float(price)
+            except ValueError:
+                print(f"Skipping product with invalid price format: {row}")
+                continue
+
+            # Range validation: must be between 0 and 999999.99
+            if not (0 <= price_val <= 999999.99):
+                print(f"Skipping product with out-of-range price {price_val}: {row}")
+                continue
+
             product = {
                 "PLU": row.get("PLU Number", "").strip(),
                 "Name": row.get("Display Text", "").strip(),
                 "EAN": normalize_ean(row.get("EAN Code", "").strip()),
-                "Price": normalize_price(row.get("Retail Price (1st)", "").strip()),
+                "Price": f"{price_val:.2f}",
                 "Department ID": row.get("Department ID", "").strip(),
                 "Text Area (1)": row.get("Text Area (1)", "").strip(),
             }
+
+            if product["PLU"] == "0000":
+                print(f"Skipping product with empty PLU: {product}")
+                continue
             products.append(product)
-            # i += 1
-            # if i >= 10:
-            #     break
+
     return products
+
 
 
 def load_xml(file_path):
@@ -86,74 +101,171 @@ def save_xml(path, tree):
     tree.write(path, encoding="utf-8", xml_declaration=True)
 
 
-def sync_products(csv_products, xml_products, tree, root):
-    csv_dict = {p["PLU"]: p for p in csv_products if p["PLU"]}
-    xml_dict = {p["PLU"]: p for p in xml_products if p["PLU"]}
 
-    # Check products from CSV (source)
-    for plu, csv_prod in csv_dict.items():
-        if plu in xml_dict:
-            # Update existing record in XML if any field differs
+
+def sync_products(csv_products, xml_products, tree, root, xml_file=XML_FILE):
+    # Use (PLU, Department ID) as composite key
+    csv_dict = {(p["PLU"], p["Department ID"]): p for p in csv_products if p["PLU"] and p["Department ID"]}
+    xml_dict = {(p["PLU"], p["Department ID"]): p for p in xml_products if p["PLU"] and p["Department ID"]}
+
+    added_count = 0
+    updated_count = 0
+    deleted_count = 0
+
+    # === UPDATE + ADD ===
+    for (plu, dept_id), csv_prod in csv_dict.items():
+        if (plu, dept_id) in xml_dict:
+            # Update record if it exists
             for record in root.findall(".//table[@name='ITEM']/record"):
                 fields = {f.attrib["column_name"]: f for f in record.findall("field")}
-                if fields.get("PLU Number") is not None and fields["PLU Number"].text.strip() == plu:
+                if (
+                    fields.get("PLU Number") is not None
+                    and fields.get("Department ID") is not None
+                    and fields["PLU Number"].text.strip() == plu
+                    and fields["Department ID"].text.strip() == dept_id
+                ):
                     updated = False
                     for col, key in [
                         ("Display Text", "Name"),
                         ("EAN Code", "EAN"),
                         ("Retail Price (1st)", "Price"),
-                        ("Department ID", "Department ID"),
                         ("Text Area (1)", "Text Area (1)"),
                     ]:
                         old_val = fields[col].text or ""
                         new_val = csv_prod[key]
                         if old_val != new_val:
-                            print(f"✏️ Updating {col} for PLU={plu}: {old_val} → {new_val}")
+                            msg = f"✏️ Updating {col} for PLU={plu}, Dept={dept_id}: {old_val} → {new_val}"
+                            print(msg)
+                            # logging.info(msg)
                             fields[col].text = new_val
                             updated = True
+
                     if updated:
-                        print(f"✅ Product {plu} updated in XML")
+                        msg = f"✅ Product (PLU={plu}, Dept={dept_id}) updated in XML"
+                        print(msg)
+                        updated_count += 1
+                        # logging.info(msg)
         else:
-            # Add new record if PLU from CSV is missing in XML
+            # Define full set of fields with defaults
+            field_defaults = {
+                "Text Area (1)": csv_prod["Text Area (1)"],
+                "Cost Price": "0",
+                "Display Text": csv_prod["Name"],
+                "EAN Code": csv_prod["EAN"],
+                "GTIN": "0",
+                "Retail Price (1st)": csv_prod["Price"],
+                "PLU Number": plu,
+                "Container ID": "0",
+                "Department ID": dept_id,
+                "Product Type": "0",
+                "Margin": "100",
+                "Barcode Print Control": "0",
+                "Barcode Format ID": "0",
+                "Sales Only ITEM": "0",
+                "Scale ITEM Type": "0",
+                "Container Tare Type": "0",
+                "Nominal Weight Value": "0",
+                "Proportional Tare Value": "0",
+                "Nominal Volume": "0",
+                "Date Offset (1)": "0",
+                "Date Offset (2)": "0",
+                "Date Print Control (1)": "0",
+                "Date Print Control (2)": "0",
+                "Text Area (2)": "",
+                "Text Area (3)": "",
+                "Text Area (4)": "",
+                "Text Area (5 Serving Size Description)": "",
+                "Text Area (6 Servings Per Description)": "",
+                "Message ID (1)": "0",
+                "Message ID (2)": "0",
+                "Message Category ID (1)": "14",
+                "Message Category ID (2)": "14",
+                "Discount Percentage (1)": "0",
+                "Items Free (1)": "0",
+                "ITEM Discount Type": "1",
+                "Promotion Control": "0",
+                "Print Promotion Message": "0",
+                "Promotion Type": "0",
+                "Promotion Voucher Id": "0",
+                "Retail Price (2nd / Freq Shopper Alternate Price)": "0",
+                "Message ID (Promotion Message)": "0",
+                "Time Period ID": "0",
+                "Voucher Amount": "0",
+                "Weight Free (1)": "0",
+                "Discount Amount Money Off (1)": "0",
+                "Weight Break Quantity (1)": "0",
+                "Weight Break Quantity (2)": "0",
+                "Item Break Quantity (1)": "0",
+                "Item Break Quantity (2)": "0",
+                "Item Promotion Quantity Limit": "0",
+                "Weight Promotion Quantity Limit": "0",
+                "Promotion Transaction Limit": "0",
+                "Retail Price (Break 1)": "0",
+                "Retail Price (Break 2)": "0",
+                "Keyboard ID (Dynamic 1)": "0",
+                "Group ID": "0",
+                "Information Voucher Id": "0",
+                "Print Format ID": "0",
+                "Print Format Type Control": "0",
+                "Print Format ID (Nutritional Label)": "100",
+                "Media ID (1)": "0",
+                "ITEM Logo Control": "0",
+                "ITEM Logo Promotion Mode": "0",
+                "ITEM Logo Type": "0",
+                "Interactive Traceability Mode": "0",
+                "Traceability Linked ITEM": "0",
+                "Traceability ITEM": "0",
+                "Traceability Scheme Id": "1",
+                "Negative By Count": "0",
+                "Tax Rate ID (Primary)": "0",
+                "Tax Rate ID (Secondary)": "0",
+                "Price Modifier Multiplier": "1",
+                "Price Modifier Divider": "1",
+                "Message Category ID (Promotion Message)": "14",
+                # "_TS": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                "_CF": "1",
+                "Display Button Text": csv_prod["Name"],  
+            }
+
+            # Create new record
             new_record = ET.SubElement(root.find(".//table[@name='ITEM']"), "record")
-            ET.SubElement(new_record, "field", column_name="PLU Number").text = plu
-            ET.SubElement(new_record, "field", column_name="Display Text").text = csv_prod["Name"]
-            ET.SubElement(new_record, "field", column_name="EAN Code").text = csv_prod["EAN"]
-            ET.SubElement(new_record, "field", column_name="Retail Price (1st)").text = csv_prod["Price"]
-            ET.SubElement(new_record, "field", column_name="Department ID").text = csv_prod["Department ID"]
-            ET.SubElement(new_record, "field", column_name="Text Area (1)").text = csv_prod["Text Area (1)"]
-            print(f"➕ Added product {plu} to XML")
 
-    # Check products from XML that are missing in CSV
-    # for plu in xml_dict:
-    #     if plu not in csv_dict:
-    #         print(f"➖ PLU={plu} exists in XML but missing in CSV (no deletion performed)")
+            # Insert all fields with exclusion="false"
+            for col, value in field_defaults.items():
+                ET.SubElement(new_record, "field", column_name=col, exclusion="false").text = value
 
-    # Save changes back to file
-    tree.write(XML_FILE, encoding="utf-8", xml_declaration=True)
-    print("💾 XML database updated.")
+            msg = f"➕ Added product (PLU={plu}, Dept={dept_id}) with full schema to XML"
+            print(msg)
+            # logging.info(msg)
+            added_count += 1
 
 
-# def sync_products(csv_products, xml_products):
-#     csv_dict = {p["PLU"]: p for p in csv_products if p["PLU"]}
-#     xml_dict = {p["PLU"]: p for p in xml_products if p["PLU"]}
+    # === DELETE ===
+    for (plu, dept_id), xml_prod in list(xml_dict.items()):
+        if (plu, dept_id) not in csv_dict:
+            for record in root.findall(".//table[@name='ITEM']/record"):
+                fields = {f.attrib["column_name"]: f for f in record.findall("field")}
+                if (
+                    fields.get("PLU Number") is not None
+                    and fields.get("Department ID") is not None
+                    and fields["PLU Number"].text.strip() == plu
+                    and fields["Department ID"].text.strip() == dept_id
+                ):
+                    root.find(".//table[@name='ITEM']").remove(record)
+                    msg = f"🗑️ Deleted product (PLU={plu}, Dept={dept_id}) from XML"
+                    print(msg)
+                    # logging.info(msg)
+                    deleted_count += 1
 
-#     for plu, csv_prod in csv_dict.items():
-#         if plu in xml_dict:
-#             xml_prod = xml_dict[plu]
-#             # Compare field by field
-#             for key, label in [("Name", "Display Text"),
-#                                ("EAN", "EAN Code"),
-#                                ("Price", "Retail Price")]:
-#                 if csv_prod[key] != xml_prod[key]:
-#                     print(f"⚠️ Difference for PLU={plu} [{label}]: "
-#                           f"CSV='{csv_prod[key]}' vs XML='{xml_prod[key]}'")
-#         else:
-#             print(f"➕ PLU={plu} exists in CSV but missing in XML")
+    # Save XML after sync
+    ET.indent(tree, space="  ", level=0)  # 2 spaces indentation
+    tree.write(xml_file, encoding="utf-8", xml_declaration=True)
 
-#     for plu in xml_dict.keys():
-#         if plu not in csv_dict:
-#             print(f"➖ PLU={plu} exists in XML but missing in CSV")
+    summary = f"Summary → Added: {added_count}, Updated: {updated_count}, Deleted: {deleted_count}"
+    print(summary)
+    # logging.info(summary)
+
+
 
 
 def main():
@@ -172,7 +284,7 @@ def main():
     # for p in xml_products[:10]:
     #     print(f"PLU={p['PLU']}, Name={p['Name']}, EAN={p['EAN']}, Price={p['Price']}, Dept={p['Department ID']}, TextArea1={p['Text Area (1)']}")
 
-    # sync_products(csv_products, xml_products, tree, root)
+    sync_products(csv_products, xml_products, tree, root)
     print("🔄 Sync complete.")
 
 
