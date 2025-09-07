@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from decimal import Decimal, InvalidOperation
 
 CSV_FILE = "carrefour_test.csv"
-XML_FILE = "database copy.xml"
+XML_FILE = "databaseSafe.xml"
 
 
 def normalize_price(value: str) -> str:
@@ -102,6 +102,8 @@ def sync_products(csv_products, xml_products, tree, root):
                         ("Display Text", "Name"),
                         ("EAN Code", "EAN"),
                         ("Retail Price (1st)", "Price"),
+                        ("Department ID", "Department ID"),
+                        ("Text Area (1)", "Text Area (1)"),
                     ]:
                         old_val = fields[col].text or ""
                         new_val = csv_prod[key]
@@ -161,14 +163,16 @@ def main():
     root = tree.getroot()
 
     print("📂 Products in CSV (Source):")
-    for p in csv_products[:10]:
-        print(f"PLU={p['PLU']}, Name={p['Name']}, EAN={p['EAN']}, Price={p['Price']}")
+    print(f"Total products in CSV: {len(csv_products)}")
+    # for p in csv_products[:10]:
+    #     print(f"PLU={p['PLU']}, Name={p['Name']}, EAN={p['EAN']}, Price={p['Price']}, Dept={p['Department ID']}, TextArea1={p['Text Area (1)']}")
 
     print("\n📂 Products in XML (Target):")
-    for p in xml_products[:10]:
-        print(f"PLU={p['PLU']}, Name={p['Name']}, EAN={p['EAN']}, Price={p['Price']}")
+    print(f"Total products in XML: {len(xml_products)}")
+    # for p in xml_products[:10]:
+    #     print(f"PLU={p['PLU']}, Name={p['Name']}, EAN={p['EAN']}, Price={p['Price']}, Dept={p['Department ID']}, TextArea1={p['Text Area (1)']}")
 
-    sync_products(csv_products, xml_products, tree, root)
+    # sync_products(csv_products, xml_products, tree, root)
     print("🔄 Sync complete.")
 
 
