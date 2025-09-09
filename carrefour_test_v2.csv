@@ -1,5 +1,5 @@
 PLU Number;Display Text;EAN Code;Retail Price (1st);Department ID;Text Area (1);Price Modifier Multiplier;Product Type;Barcode Format ID;Print Format ID
-0249;CHAP K CHIR 200 GM BELLAT;6130586000065;535.00;20;Consume a fin du 2 jours;90;1;1;1
+0249;CHAP K CHIR test 400 GM BELLAT;6130586000065;777.00;20;Consume a fin du 2 jours;90;1;1;1
 0251;CHAP MORTADEL 200 GM BELLAT;6130586001062;535.00;20;Consume a fin du 2 jours;1000;0;1;1
 0252;CHAP THON 200 GM BELLAT;6130586001161;550.00;20;Consume a fin du 2 jours;1000;0;1;1
 0253;CACHIR  BEN TOUMIA GM;2010253;470.00;20;Consume a fin du 2 jours;1000;0;1;1

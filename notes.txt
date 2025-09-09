@@ -1,2 +1,0 @@
-when product type = 0 (meaning by weight) price modifier multiplier will be ignored (it works only with product type = 1)
-price modifier multiplier must be [1;99]
