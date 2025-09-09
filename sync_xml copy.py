@@ -71,6 +71,7 @@ def load_csv(file_path):
                 "Price": f"{price_val:.2f}",
                 "Department ID": safe_int(row.get("Department ID", "").strip()),
                 "Text Area (1)": row.get("Text Area (1)", "").strip(),
+                
             }
 
             if product["PLU"] == 0:

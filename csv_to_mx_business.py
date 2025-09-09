@@ -26,9 +26,9 @@ from typing import Dict, List, Optional, Tuple
 class Config:
     """Configuration constants for the sync script."""
     
-    CSV_FILE = "carrefour_test.csv"
-    # XML_FILE = r"c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml"
-    XML_FILE = "databaseSafe.xml"
+    CSV_FILE = "carrefour_test_v2.csv"
+    XML_FILE = r"c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml"
+    # XML_FILE = "databaseSafe.xml"
     CSV_ENCODING = "latin-1"
     CSV_DELIMITER = ";"
     
@@ -217,6 +217,21 @@ class CSVLoader:
         if plu == 0:
             logging.warning(f"Row {row_num}: Missing or invalid PLU - skipping")
             return None
+        
+        # Extract Product Type and validate that is in [0, 1, 2, 4, 6, 9, 99]
+        #  where 0 by weight, 1 by count, 2 fixed price, 4 fixed weight (total price), 6 by , 9 by manual weight, 99 Negative by count
+        product_type = self.validator.safe_int_conversion(row.get("Product Type", ""))
+        if product_type not in [0, 1, 2, 4, 6, 9, 99]:
+            logging.warning(f"Row {row_num}: Invalid Product Type '{product_type}' - skipping")
+            return None
+
+        # check if Price Modifier Multiplier is valid integer in [1, 99]
+        price_modifier_multiplier = self.validator.safe_int_conversion(row.get("Price Modifier Multiplier", "1"), default=1)
+        if price_modifier_multiplier < 1 or price_modifier_multiplier > 100:
+            logging.warning(f"Row {row_num}: Invalid Price Modifier Multiplier '{price_modifier_multiplier}' - defaulting to 1")
+            price_modifier_multiplier = 1
+            # return None
+        
             
         # Create product dictionary
         product = {
@@ -228,6 +243,12 @@ class CSVLoader:
             "Price": normalized_price,
             "Department ID": self.validator.safe_int_conversion(row.get("Department ID", "")),
             "Text Area (1)": row.get("Text Area (1)", "").strip(),
+            "Product Type": product_type,
+            # "Price Modifier Multiplier": self.validator.safe_int_conversion(row.get("Price Modifier Multiplier", "1"), default=1),
+            "Price Modifier Multiplier": price_modifier_multiplier,
+            "Barcode Format ID": self.validator.safe_int_conversion(row.get("Barcode Format ID", "0"), default=0),
+            "Print Format ID": self.validator.safe_int_conversion(row.get("Print Format ID", "0"), default=0),
+            "_TS": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         }
         
         return product
@@ -301,6 +322,11 @@ class XMLManager:
                 "Price": self.validator.normalize_price(fields.get("Retail Price (1st)", "")),
                 "Department ID": self.validator.safe_int_conversion(fields.get("Department ID", "")),
                 "Text Area (1)": fields.get("Text Area (1)", ""),
+                "Product Type": self.validator.safe_int_conversion(fields.get("Product Type", "")),
+                "Price Modifier Multiplier": self.validator.safe_int_conversion(fields.get("Price Modifier Multiplier", "1"), default=1),
+                "Barcode Format ID": self.validator.safe_int_conversion(fields.get("Barcode Format ID", "0"), default=0),
+                "Print Format ID": self.validator.safe_int_conversion(fields.get("Print Format ID", "0"), default=0),
+                "_TS": fields.get("_TS", ""),
             }
             products.append(product)
             
@@ -393,13 +419,17 @@ class ProductSynchronizer:
             csv_dict (Dict): CSV products dictionary
             xml_dict (Dict): XML products dictionary  
             root (ET.Element): XML root element
-        """
+                """
         for (plu, dept_id), csv_prod in csv_dict.items():
             try:
+                # Ensure timestamp is added here
+                csv_prod["_TS"] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
                 if (plu, dept_id) in xml_dict:
                     self._update_existing_product(plu, dept_id, csv_prod, root)
                 else:
                     self._add_new_product(plu, dept_id, csv_prod, root)
+
             except Exception as e:
                 logging.error(f"Error processing product PLU={plu}, Dept={dept_id}: {e}")
                 self.stats["errors"] += 1
@@ -420,14 +450,20 @@ class ProductSynchronizer:
             if (self._match_product_record(fields, plu, dept_id)):
                 updated = False
                 
-                # Define fields to update
+                # Define fields to update (excluding _TS from comparison)
                 update_mappings = [
                     ("Display Text", "Name"),
                     ("EAN Code", "EAN"),
                     ("Retail Price (1st)", "Price"),
                     ("Text Area (1)", "Text Area (1)"),
+                    ("Product Type", "Product Type"),
+                    ("Price Modifier Multiplier", "Price Modifier Multiplier"),
+                    ("Barcode Format ID", "Barcode Format ID"),
+                    ("Print Format ID", "Print Format ID"),
+                    ("Display Button Text", "Name")
                 ]
                 
+                # Check if any data fields have changed
                 for xml_col, csv_key in update_mappings:
                     if xml_col in fields:
                         old_val = fields[xml_col].text or ""
@@ -437,6 +473,23 @@ class ProductSynchronizer:
                             logging.info(f"Updating {xml_col} for PLU={plu}, Dept={dept_id}: '{old_val}' -> '{new_val}'")
                             fields[xml_col].text = new_val
                             updated = True
+                
+                # Only update _TS if other fields were updated OR if _TS field doesn't exist
+                if updated or "_TS" not in fields:
+                    # Generate current timestamp only when needed
+                    current_ts = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                    
+                    if "_TS" not in fields:
+                        # Create new _TS field if it doesn't exist
+                        ts_field = ET.SubElement(record, "field", 
+                                               column_name="_TS", 
+                                               exclusion="false")
+                        ts_field.text = current_ts
+                        logging.info(f"Added _TS field for PLU={plu}, Dept={dept_id}: '{current_ts}'")
+                    else:
+                        # Update existing _TS field only if other data changed
+                        fields["_TS"].text = current_ts
+                        logging.info(f"Updated _TS for PLU={plu}, Dept={dept_id}: '{current_ts}'")
                 
                 if updated:
                     logging.info(f"Product updated: PLU={plu}, Dept={dept_id}")
@@ -516,10 +569,10 @@ class ProductSynchronizer:
             "PLU Number": str(plu),
             "Container ID": "0",
             "Department ID": str(dept_id),
-            "Product Type": "0",
+            "Product Type": str(csv_prod["Product Type"]),
             "Margin": "100",
             "Barcode Print Control": "0",
-            "Barcode Format ID": "0",
+            "Barcode Format ID": str(csv_prod["Barcode Format ID"]),
             "Sales Only ITEM": "0",
             "Scale ITEM Type": "0",
             "Container Tare Type": "0",
@@ -564,7 +617,7 @@ class ProductSynchronizer:
             "Keyboard ID (Dynamic 1)": "0",
             "Group ID": "0",
             "Information Voucher Id": "0",
-            "Print Format ID": "0",
+            "Print Format ID": str(csv_prod["Print Format ID"]),
             "Print Format Type Control": "0",
             "Print Format ID (Nutritional Label)": "100",
             "Media ID (1)": "0",
@@ -578,9 +631,11 @@ class ProductSynchronizer:
             "Negative By Count": "0",
             "Tax Rate ID (Primary)": "0",
             "Tax Rate ID (Secondary)": "0",
-            "Price Modifier Multiplier": "1",
+            "Price Modifier Multiplier": str(csv_prod["Price Modifier Multiplier"]),
             "Price Modifier Divider": "1",
             "Message Category ID (Promotion Message)": "14",
+            #       <field column_name="_TS" exclusion="false">2025-08-18T09:30:05</field>
+            "_TS": str(datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")),
             "_CF": "1",
             "Display Button Text": csv_prod["Name"],
         }
