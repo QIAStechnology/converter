@@ -27,9 +27,10 @@ from typing import Dict, List, Optional, Tuple
 class Config:
     """Configuration constants for the sync script."""
     
-    CSV_FILE = "carrefour_test_v2.csv"
+    CSV_FILE = "carrefour_test3.csv"
     XML_FILE = r"c:\ProgramData\Avery Berkel\MXBusiness\DEFAULT_5.4.5.3503\Project\MXBusiness - 638907826887926093\Data\Database\database.xml"
-    CSV_ENCODING = "latin-1"
+    CSV_ENCODING = "utf-8-sig"
+    # CSV_ENCODING = "latin-1"
     CSV_DELIMITER = ";"
     
     # Price validation limits
@@ -107,6 +108,7 @@ class CSVLoader:
                 reader = csv.DictReader(csvfile, delimiter=Config.CSV_DELIMITER)
                 for row_num, row in enumerate(reader, start=2):
                     try:
+                        # print(row)
                         product = self._process_row(row, row_num)
                         if product:
                             products.append(product)
